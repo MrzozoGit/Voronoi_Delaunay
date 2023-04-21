@@ -28,13 +28,7 @@ if (EXISTS "${CMAKE_SOURCE_DIR}/SDL2")
 endif()
 
 find_package(SDL2 REQUIRED)
-
-add_custom_command(
-    TARGET ${PROJECT_NAME} POST_BUILD        # Adds a post-build event to Cpp_SDL_Program
-    COMMAND ${CMAKE_COMMAND} -E copy_directory # which executes "cmake - E copy_if_different..."
-        ${PROJECT_SOURCE_DIR}/resources      # <--this is in-file
-        $<TARGET_FILE_DIR:${PROJECT_NAME}>/resources
-)    
+ 
 
 # Enable many good warnings.
 
