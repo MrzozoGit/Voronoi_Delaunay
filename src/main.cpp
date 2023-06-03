@@ -82,7 +82,7 @@ void drawTriangles(SDL_Renderer *renderer, const std::vector<Triangle> &triangle
 
 void draw(SDL_Renderer *renderer, const Application &app)
 {
-    /* Remplissez cette fonction pour faire l'affichage du jeu */
+    // Remplissez cette fonction pour faire l'affichage du jeu
     int width, height;
     SDL_GetRendererOutputSize(renderer, &width, &height);
 
@@ -90,10 +90,9 @@ void draw(SDL_Renderer *renderer, const Application &app)
     drawTriangles(renderer, app.triangles);
 }
 
-/*
-   Détermine si un point se trouve dans un cercle définit par trois points
-   Retourne, par les paramètres, le centre et le rayon
-*/
+
+// Détermine si un point se trouve dans un cercle définit par trois points
+// Retourne, par les paramètres, le centre et le rayon
 bool CircumCircle(
     float pX, float pY,
     float x1, float y1, float x2, float y2, float x3, float y3,
@@ -105,7 +104,7 @@ bool CircumCircle(
     float fabsy1y2 = fabs(y1 - y2);
     float fabsy2y3 = fabs(y2 - y3);
 
-    /* Check for coincident points */
+    // On vérifie si des points coincident
     if (fabsy1y2 < EPSILON && fabsy2y3 < EPSILON)
         return (false);
 
@@ -157,7 +156,26 @@ bool CircumCircle(
 
 void construitVoronoi(Application &app)
 {
-    
+    // On nettoie les triangles à chaque passage de la boucle
+    app.triangles.clear();
+
+    size_t nb_points = app.points.size();
+    // On parcourt les points placés par l'utilisateur
+    for (size_t i = 0; i < nb_points; i++)
+    {
+        for (size_t j = i+1; j < nb_points; j++)
+        {
+            for (size_t y = j + 1; y < nb_points; y++)
+            {
+                // On genere les triangles
+                Triangle triangle;
+                triangle.p1 = app.points[i];
+                triangle.p2 = app.points[j];
+                triangle.p3 = app.points[y];
+                app.triangles.push_back(triangle);
+            }
+        }
+    }
 }
 
 bool handleEvent(Application &app)
@@ -213,7 +231,7 @@ int main(int argc, char **argv)
 
     renderer = SDL_CreateRenderer(gWindow, -1, 0); // SDL_RENDERER_PRESENTVSYNC
 
-    /*  GAME LOOP  */
+    // GAME LOOP
     while (true)
     {
         // INPUTS
@@ -224,9 +242,11 @@ int main(int argc, char **argv)
         // EFFACAGE FRAME
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
+        
 
         // DESSIN
         draw(renderer, app);
+        SDL_Log("Hi!\n");
 
         // VALIDATION FRAME
         SDL_RenderPresent(renderer);
@@ -235,7 +255,7 @@ int main(int argc, char **argv)
         SDL_Delay(1000 / 30);
     }
 
-    // Free resources and close SDL
+    // Libère les ressources et ferme SDL
     close(gWindow, renderer);
 
     return 0;
