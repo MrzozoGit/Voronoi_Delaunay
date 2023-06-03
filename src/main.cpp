@@ -12,7 +12,7 @@ struct Coords
 {
     int x, y;
 
-    bool operator==(const Coords& other)
+    bool operator==(const Coords& other) const
     {
         return x == other.x and y == other.y;
     }
@@ -164,70 +164,66 @@ void construitVoronoi(Application &app)
 
     // On créé le très gros triangles :O
     Triangle veryBigTriangle;
-    veryBigTriangle.p1.x = -1000;
-    veryBigTriangle.p1.y = -1000;
-    veryBigTriangle.p2.x = 500;
-    veryBigTriangle.p2.y = 3000;
-    veryBigTriangle.p3.x = 1500;
-    veryBigTriangle.p3.y = -1000;
+    veryBigTriangle.p1 = {-1000, -1000};
+    veryBigTriangle.p2 = {500, 3000};
+    veryBigTriangle.p3 = {1500, -1000};
+
     // On l'ajoute à la liste de triangles déjà créés
     app.triangles.push_back(veryBigTriangle);
 
-    size_t nb_points = app.points.size();
     // Pour chaque point P du repère...
-    for (const Coords& P : app.points)
+    // (retour aux for car c'est plus simple et ça marche mieux)
+    for (size_t i=0; i < app.points.size(); i++)
     {
+        const Coords P = app.points[i];
+
         // On créé une liste de segments LS
         std::vector<Segment> LS;
 
         // Pour chaque triangle T déjà créé...
-        // (On utilise un itérateur pour pouvoir ensuite utiliser correctement erase)
-        for (auto it = app.triangles.begin(); it != app.triangles.end();)
+        for (size_t j=0; j < app.triangles.size(); j++)
         {
-            const Triangle& T = *it;
+            const Triangle T = app.triangles[j];
 
             // Si le cercle circonscrit contient le point P...
             float xc, yc, rsqr;
             if (CircumCircle(P.x, P.y, T.p1.x, T.p1.y, T.p2.x, T.p2.y, T.p3.x, T.p3.y, &xc, &yc, &rsqr))
             {
-                SDL_Log("yo yo yo c dedans !\n");
-
                 // Récupère les segments de ce triangle dans LS
                 Segment s1, s2, s3;
-                s1.p1 = T.p1;
-                s1.p2 = T.p2;
-                s2.p1 = T.p2;
-                s2.p2 = T.p3;
-                s3.p1 = T.p3;
-                s3.p2 = T.p1;
+                s1 = {T.p1, T.p2};
+                s2 = {T.p2, T.p3};
+                s3 = {T.p3, T.p1};
                 LS.push_back(s1);
                 LS.push_back(s2);
                 LS.push_back(s3);
 
                 // On enlève le triangle T de la liste
-                SDL_Log("test: %i", it);
-                it = app.triangles.erase(it);
-            }
-            else
-            {
-                ++it;
+                app.triangles.erase(app.triangles.begin() + j);
+                j--;
             }
         }
 
         // Pour chaque segment S de la liste LS...
-        for (Segment& segment : LS)
+        for (size_t k=0; k < LS.size(); k++)
         {
-            for (auto it = LS.begin(); it != LS.end();)
+            const Segment S = LS[k];
+            
+            // Si un segment est un doublon d'un autre...
+            for (size_t l=0; l < LS.size(); l++)
             {
-                // Si un segment est un doublon d'un autre...
-                if (segment.p1 == it->p2 && segment.p2 == it->p1)
+                const Segment S2 = LS[l];
+
+                // On ne prend pas en compte si c'est le même segment
+                if (k == l) break;
+
+                if ((S.p1 == S2.p2) && (S.p2 == S2.p1))
                 {
-                    // On le vire !!!
-                    it = LS.erase(it);
-                }
-                else
-                {
-                    ++it;
+                    // On les vire !!!
+                    LS.erase(LS.begin() + k);
+                    LS.erase(LS.begin() + l);
+                    k--;
+                    l--;
                 }
             }
         }
