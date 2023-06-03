@@ -156,24 +156,91 @@ bool CircumCircle(
 
 void construitVoronoi(Application &app)
 {
-    // On nettoie les triangles à chaque passage de la boucle
+    // On tri les points
+    std::sort(app.points.begin(), app.points.end(), compareCoords);
+
+    // On vide la liste de triangles
     app.triangles.clear();
 
+    // On créé le très gros triangles :O
+    Triangle veryBigTriangle;
+    veryBigTriangle.p1.x = -1000;
+    veryBigTriangle.p1.y = -1000;
+    veryBigTriangle.p2.x = 500;
+    veryBigTriangle.p2.y = 3000;
+    veryBigTriangle.p3.x = 1500;
+    veryBigTriangle.p3.y = -1000;
+    // On l'ajoute à la liste de triangles déjà créés
+    app.triangles.push_back(veryBigTriangle);
+
     size_t nb_points = app.points.size();
-    // On parcourt les points placés par l'utilisateur
-    for (size_t i = 0; i < nb_points; i++)
+    // Pour chaque point P du repère...
+    for (const Coords& P : app.points)
     {
-        for (size_t j = i+1; j < nb_points; j++)
+        // On créé une liste de segments LS
+        std::vector<Segment> LS;
+
+        // Pour chaque triangle T déjà créé...
+        // (On utilise un itérateur pour pouvoir ensuite utiliser correctement erase)
+        for (auto it = app.triangles.begin(); it != app.triangles.end();)
         {
-            for (size_t y = j + 1; y < nb_points; y++)
+            const Triangle& T = *it;
+
+            // Si le cercle circonscrit contient le point P...
+            float xc, yc, rsqr;
+            if (CircumCircle(P.x, P.y, T.p1.x, T.p1.y, T.p2.x, T.p2.y, T.p3.x, T.p3.y, &xc, &yc, &rsqr))
             {
-                // On genere les triangles
-                Triangle triangle;
-                triangle.p1 = app.points[i];
-                triangle.p2 = app.points[j];
-                triangle.p3 = app.points[y];
-                app.triangles.push_back(triangle);
+                SDL_Log("yo yo yo c dedans !\n");
+
+                // Récupère les segments de ce triangle dans LS
+                Segment s1, s2, s3;
+                s1.p1 = T.p1;
+                s1.p2 = T.p2;
+                s2.p1 = T.p2;
+                s2.p2 = T.p3;
+                s3.p1 = T.p3;
+                s3.p2 = T.p1;
+                LS.push_back(s1);
+                LS.push_back(s2);
+                LS.push_back(s3);
+
+                // On enlève le triangle T de la liste
+                SDL_Log("test: %i", it);
+                it = app.triangles.erase(it);
             }
+            else
+            {
+                ++it;
+            }
+        }
+
+        // Pour chaque segment S de la liste LS...
+        for (Segment& segment : LS)
+        {
+            for (auto it = LS.begin(); it != LS.end();)
+            {
+                // Si un segment est un doublon d'un autre...
+                if (segment.p1 == it->p2 && segment.p2 == it->p1)
+                {
+                    // On le vire !!!
+                    it = LS.erase(it);
+                }
+                else
+                {
+                    ++it;
+                }
+            }
+        }
+
+        // Pour chaque segment S de la liste LS...
+        for (const Segment& segment : LS)
+        {
+            // On créé un nouveau triangle composé du segment S et du point P
+            Triangle newTriangle;
+            newTriangle.p1 = segment.p1;
+            newTriangle.p2 = segment.p2;
+            newTriangle.p3 = P;
+            app.triangles.push_back(newTriangle);
         }
     }
 }
@@ -231,7 +298,7 @@ int main(int argc, char **argv)
 
     renderer = SDL_CreateRenderer(gWindow, -1, 0); // SDL_RENDERER_PRESENTVSYNC
 
-    // GAME LOOP
+    // MAIN LOOP
     while (true)
     {
         // INPUTS
@@ -246,7 +313,6 @@ int main(int argc, char **argv)
 
         // DESSIN
         draw(renderer, app);
-        SDL_Log("Hi!\n");
 
         // VALIDATION FRAME
         SDL_RenderPresent(renderer);
