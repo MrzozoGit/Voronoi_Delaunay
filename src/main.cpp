@@ -8,6 +8,36 @@
 
 #define EPSILON 0.0001f
 
+struct Color
+{
+    int r, g, b;
+
+    // A l'instanciation d'une couleur, on génère des valeurs RGB équilibrées pour avoir une couleur proche de celle du diagramme de Voronoi
+    Color()
+    {
+        int r = rand() % 256;
+        int g = rand() % 256;
+        int b = rand() % 256;
+
+        // On réparti les composantes de manière équilibrée
+        int maxComponent = std::max(r, std::max(g, b));
+        int minComponent = std::min(r, std::min(g, b));
+
+        if (maxComponent - minComponent < 40)
+        {
+            // Si la différence entre la composante maximale et minimale est faible, on ajuste les composantes pour les équilibrer
+            int adjustment = (40 - (maxComponent - minComponent)) / 2;
+            r = std::min(255, r + adjustment);
+            g = std::min(255, g + adjustment);
+            b = std::min(255, b + adjustment);
+        }
+
+        this->r = r;
+        this->g = g;
+        this->b = b;
+    }
+};
+
 struct Coords
 {
     int x, y;
@@ -23,6 +53,12 @@ struct Segment
     Coords p1, p2;
 };
 
+struct Polygon
+{
+    std::vector<Coords> vertices;
+    Color color;
+};
+
 struct Triangle
 {
     Coords p1, p2, p3;
@@ -36,6 +72,7 @@ struct Application
 
     std::vector<Coords> points;
     std::vector<Triangle> triangles;
+    std::vector<Polygon> polygones;
 };
 
 bool compareCoords(Coords point1, Coords point2)
@@ -80,14 +117,49 @@ void drawTriangles(SDL_Renderer *renderer, const std::vector<Triangle> &triangle
     }
 }
 
+// Dessiner les polygones
+void drawPolygon(SDL_Renderer *renderer, const std::vector<Polygon> &polygones)
+{
+    // On préinstancie les vecteurs x et y pour optimiser 
+    std::vector<Sint16> vx;
+    std::vector<Sint16> vy;
+
+    // Pour tous les polygones...
+    for (size_t i=0; i < polygones.size(); i++)
+    {
+        // On récupère le polygone courant
+        const Polygon &p = polygones[i];
+
+        // On réinitialise les vecteurs x et y
+        vx.clear();
+        vy.clear();
+
+        // On réserve de l'espace pour les coordonnées x et y
+        vx.reserve(p.vertices.size());
+        vy.reserve(p.vertices.size());
+
+        // Pour chaque sommet du polygone...
+        for (const auto& vertex : p.vertices)
+        {
+            // On ajoute les coordonnées x et y des sommets aux vecteurs correspondant
+            vx.push_back(vertex.x);
+            vy.push_back(vertex.y);
+        }
+
+        // Enfin, on dessiner le polygone !
+        filledPolygonRGBA(renderer, vx.data(), vy.data(), vx.size(), p.color.r, p.color.g, p.color.b, SDL_ALPHA_OPAQUE);
+    }
+}
+
 void draw(SDL_Renderer *renderer, const Application &app)
 {
     // Remplissez cette fonction pour faire l'affichage du jeu
     int width, height;
     SDL_GetRendererOutputSize(renderer, &width, &height);
 
-    drawPoints(renderer, app.points);
+    drawPolygon(renderer, app.polygones);
     drawTriangles(renderer, app.triangles);
+    drawPoints(renderer, app.points);
 }
 
 
@@ -154,13 +226,15 @@ bool CircumCircle(
     return ((drsqr - *rsqr) <= EPSILON ? true : false);
 }
 
-void construitVoronoi(Application &app)
+// Construire Delaunay
+void construitDelaunay(Application& app)
 {
     // On tri les points
     std::sort(app.points.begin(), app.points.end(), compareCoords);
 
     // On vide la liste de triangles
     app.triangles.clear();
+    app.polygones.clear();
 
     // On créé le très gros triangles :O
     Triangle veryBigTriangle;
@@ -215,30 +289,80 @@ void construitVoronoi(Application &app)
                 const Segment S2 = LS[l];
 
                 // On ne prend pas en compte si c'est le même segment
-                if (k == l) break;
+                // if (k == l) break;
 
                 if ((S.p1 == S2.p2) && (S.p2 == S2.p1))
                 {
                     // On les vire !!!
-                    LS.erase(LS.begin() + k);
                     LS.erase(LS.begin() + l);
-                    k--;
                     l--;
+                    LS.erase(LS.begin() + k);
+                    k--;
                 }
             }
         }
 
         // Pour chaque segment S de la liste LS...
-        for (const Segment& segment : LS)
+        for (const Segment& S : LS)
         {
             // On créé un nouveau triangle composé du segment S et du point P
             Triangle newTriangle;
-            newTriangle.p1 = segment.p1;
-            newTriangle.p2 = segment.p2;
+            newTriangle.p1 = S.p1;
+            newTriangle.p2 = S.p2;
             newTriangle.p3 = P;
             app.triangles.push_back(newTriangle);
         }
     }
+}
+
+// Construire les polygones du diagramme de Voronoi
+void construitPolygones(Application& app)
+{
+    // On vide la liste de polygones
+    app.polygones.clear();
+    
+    // On créé une liste de polygones
+    std::vector<Polygon> polygones;
+
+    // Pour chaque points...
+    for (const auto& point : app.points)
+    {
+        // On créé un polygone
+        Polygon polygone;
+
+        // On lui assigne une couleur
+        Color color;
+        polygone.color = color;
+
+        // Pour chaque triangle...
+        for (const auto& triangle : app.triangles)
+        {
+            // On vérifie si le point P est un sommet du triangle
+            if (triangle.p1 == point || triangle.p2 == point || triangle.p3 == point)
+            {
+                // On récupère le centre du cercle
+                float xc, yc, rsqr;
+                CircumCircle(point.x, point.y, triangle.p1.x, triangle.p1.y, triangle.p2.x, triangle.p2.y, triangle.p3.x, triangle.p3.y, &xc, &yc, &rsqr);
+
+                // On ajoute le centre du cercle au polygone
+                polygone.vertices.push_back({(int)xc, (int)yc});
+            }
+        }
+        // On trie les points du polygone
+        std::sort(polygone.vertices.begin(), polygone.vertices.end(), compareCoords);
+
+        // On ajoute le polygone à la liste
+        app.polygones.push_back(polygone);
+    }
+}
+
+void construitVoronoi(Application &app)
+{
+    // On construit Delaunay
+    construitDelaunay(app);
+
+    // On construit les polygones
+    construitPolygones(app);
 }
 
 bool handleEvent(Application &app)
