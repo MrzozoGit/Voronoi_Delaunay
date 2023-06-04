@@ -46,6 +46,14 @@ struct Coords
     {
         return x == other.x and y == other.y;
     }
+
+    bool compare(const Coords& pointToCompare, const Coords& smallest)
+    {
+        double angleCurrent = atan2(this->y - smallest.y, this->x - smallest.x);
+        double angleToCompare = atan2(pointToCompare.y - smallest.y, pointToCompare.x - smallest.x);
+        
+        return angleCurrent < angleToCompare;
+    }
 };
 
 struct Segment
@@ -288,9 +296,6 @@ void construitDelaunay(Application& app)
             {
                 const Segment S2 = LS[l];
 
-                // On ne prend pas en compte si c'est le même segment
-                // if (k == l) break;
-
                 if ((S.p1 == S2.p2) && (S.p2 == S2.p1))
                 {
                     // On les vire !!!
@@ -298,6 +303,7 @@ void construitDelaunay(Application& app)
                     l--;
                     LS.erase(LS.begin() + k);
                     k--;
+                    break;
                 }
             }
         }
@@ -320,12 +326,9 @@ void construitPolygones(Application& app)
 {
     // On vide la liste de polygones
     app.polygones.clear();
-    
-    // On créé une liste de polygones
-    std::vector<Polygon> polygones;
 
     // Pour chaque points...
-    for (const auto& point : app.points)
+    for (const Coords& point : app.points)
     {
         // On créé un polygone
         Polygon polygone;
@@ -335,7 +338,7 @@ void construitPolygones(Application& app)
         polygone.color = color;
 
         // Pour chaque triangle...
-        for (const auto& triangle : app.triangles)
+        for (const Triangle& triangle : app.triangles)
         {
             // On vérifie si le point P est un sommet du triangle
             if (triangle.p1 == point || triangle.p2 == point || triangle.p3 == point)
@@ -348,10 +351,21 @@ void construitPolygones(Application& app)
                 polygone.vertices.push_back({(int)xc, (int)yc});
             }
         }
-        // On trie les points du polygone
-        std::sort(polygone.vertices.begin(), polygone.vertices.end(), compareCoords);
 
-        // On ajoute le polygone à la liste
+        // On cherche le point avec les plus petites coordonnées
+        Coords smallestVertex = polygone.vertices[0];
+        for (const Coords& vertex : polygone.vertices)
+        {
+            if (vertex.y < smallestVertex.y || (vertex.y == smallestVertex.y && vertex.x < smallestVertex.x))
+            {
+                smallestVertex = vertex;
+            }
+        }
+
+        // On trie les points en fonction du point plus petit
+        std::sort(polygone.vertices.begin(), polygone.vertices.end(), [&](Coords& a, Coords& b){ return a.compare(b, smallestVertex); });
+
+        // On ajoute le polygone trié à la liste
         app.polygones.push_back(polygone);
     }
 }
@@ -361,13 +375,13 @@ void construitVoronoi(Application &app)
     // On construit Delaunay
     construitDelaunay(app);
 
-    // On construit les polygones
+    // On construit les polygones du diagramme
     construitPolygones(app);
 }
 
+// Gérer les input utilisateur
 bool handleEvent(Application &app)
 {
-    /* Remplissez cette fonction pour gérer les inputs utilisateurs */
     SDL_Event e;
     while (SDL_PollEvent(&e))
     {
