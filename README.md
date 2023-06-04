@@ -1,76 +1,59 @@
-# Simple Cpp Setup
 
-🎉 Welcome to this simple C++ template project!<br/>
-👩‍💻 It contains everything you need to get started with programming in C++.
+# Programmation et Algorithmique II
 
-This is a fork from the great template of Jules Fouchy that you can find [here](https://github.com/JulesFouchy/Simple-Cpp-Setup)
 
-If your machine is already setup and can compile C++ code, you can jump to [Creating a repository](#creating-a-repository).
 
-- [Simple Cpp Setup](#simple-cpp-setup)
-  - [Installing the tools](#installing-the-tools)
-    - [IDE](#ide)
-    - [CMake](#cmake)
-  - [Creating a repository](#creating-a-repository)
-  - [Downloading the repository on your computer](#downloading-the-repository-on-your-computer)
-  - [Running the code](#running-the-code)
-  - [Writing code](#writing-code)
 
-## Installing the tools
 
-### IDE
+- [Enzo Bassot](https://github.com/MrzozoGit)
+- [Guilhem Duval](https://www.github.com/GuilhemDuval)
 
-We recommend using Visual Studio Code as your IDE (Integrated Development Environment). [You can download it from here.](https://code.visualstudio.com/)
+## Rédaction
 
-Then you will need the C++ extensions: [ms-vscode.cpptools-extension-pack](https://marketplace.visualstudio.com/items?itemName=ms-vscode.cpptools-extension-pack).
+### Le container list
 
-### CMake
+La structure "list" permet de stocker plusieurs éléments à la suite. Elle se base sur le principe de nœud et de pointeur. Fondamentalement, une "list" est une chaîne de nœuds. Chacun est relié au nœud précédent et au nœud suivant. La "list" est dite doublement chaîné, car un nœud de départ et un nœud de fin l'encadre. Ces nœuds permettent l'accès aux éléments par le début ou la fin de la liste.
 
-Install CMake from https://cmake.org/download/ (or from your favorite package manager).
+L'utilisation de pointeur facilite l'insertion et la suppression des éléments. En effet, il suffit de modifier seulement les liens entre les éléments concernés au lieu de déplacer tous les éléments au sein de la mémoire. Cela minimise donc la réallocation de mémoire.
 
-## Creating a repository
+Cependant, l'accès à des éléments au milieu de la liste est moins optimal. La position de l'élément influe sur le nombre d'opérations comme il est nécessaire de parcourir tous les nœuds depuis le début ou la fin de la "list". Stocker les liens entre chaque nœud rend aussi l'utilisation de cette structure plus lourde en mémoire.
 
-Make a copy of this repository on your own GitHub account by using `Use this template`.
-![](./docs/use-this-template.png)
+Concrètement, une "list" est utile s'il est nécessaire d'ajouter ou de supprimer des éléments de notre ensemble, peu importe leur position. L'accès complexe à des éléments est lui plus limité.
 
-> **NB:** If you are not using GitHub but GitLab or anything else, just download the code (using the `Code` dropdown next to `Use this template`), then create a repo on your own, and commit the downloaded code to that repo. `Use this template` is just a convenient shortcut, it is not mandatory.
+Une "list" serait donc pratique pour suivre les adhérents d'une association parisienne. Il serait possible d'ajouter un flux imprévisible d'adhérents. Il serait aussi possible de supprimer un adhérent qui quitte l'association sans utiliser trop de ressources.
 
-## Downloading the repository on your computer
+### Le container vector
 
-Open a terminal in the folder where you want to download this repository, and run:
-```bash
-git clone [url to the repository you just created]
-```
+Un "vector" est un autre conteneur de données. Contrairement au précédent, les éléments sont stockés de manière contiguë. Dans la mémoire, les cases associées aux éléments se suivent obligatoirement. Ainsi, lors de la création d'un vecteur, une plage est délimitée en mémoire pour un nombre d'éléments finis. Lorsque ce nombre est dépassé, il est nécessaire de déplacer tous les éléments au sein d'une plage plus large, réallouer la mémoire.
 
-For example in my case this would be:
-```bash
-git clone https://github.com/dsmtE/SimpleCppSetup
-```
+Cela implique des avantages. Il est par exemple facile d'accéder aux éléments grâce à un index de position dans la suite. Les éléments côtés à côtes, il suffit de se déplacer linéairement dans la mémoire pour retrouver notre élément. L'ajout et la suppression d'éléments à la fin sont aisés comme elle ne nécessite aucun décalage d'éléments.
 
-## Running the code
+Les mêmes opérations sont coûteuses au milieu de la suite pour la raison inverse. Décaler les éléments est nécessaire pour laisser de la place ou en combler. De même, dépasser la capacité maximale du "vector" n'est pas conseillé, car elle enclenche des réallocations coûteuses. Un "vector" est donc optimal lorsque son nombre d'éléments est constant ou prévisible.
 
-Open the folder in Visual Studio Code. You should then see something like:
+Le "vector" brille concrètement lorsque nous souhaitons accéder à des éléments variés du tableau. L'ajout ou la suppression d'entrées est, elle plus limitée.
 
-![](./docs/open-project.png)
+Un "vector" serait donc parfait pour gérer le stock d'une association de prêt de matériel présente sur une université. Il serait facile d'accéder aux articles rapidement. De plus, le matériel n'est pas ordonné dans la suite, même si il est bien rangé dans les locaux. Aussi, le budget de l'association limite l'ajout de stock et les étudiants en prennent soin, donc pas trop de suppressions.
 
-In the bottom section, click the `Run` (triangle) button:
+### Le container deque
 
-![](./docs/run.png)
+"Deque" est l'acronyme de "Double-ended queue". Ce conteneur est comme une forme alternative du "vector" inspiré par les "list". Comme le "vector", il est implémenté sous forme contiguë en mémoire. Cependant, au lieu d'un unique bloc, des segments contigus sont séparés dans la mémoire et reliés par des pointeurs comme dans une "list".
 
-> 💡 If the `Run` button isn't there, it is probably because you did not open the right folder. Maybe you opened the parent of the folder containing the project? Check that in the folder view (framed in red in the previous picture) you have a `CMakeLists.txt` at the root.
-If this wasn't the problem, then maybe you didn't install the C++ extensions, or you just need to close and re-open VS Code for the changes to take effect.
+Cette structure apporte les avantages de la "list". Les opérations en début, mais aussi en fin de la liste sont facilitées. Son évolution est aussi plus facile, car il n'est plus nécessaire de réaliser des réallocations complètes.
 
-The first time, it will ask you which compiler you want to use. You might need to click `Scan for kits`. Then, if you installed everything correctly, you should have at least one in the list. Select one that talks about 64 bit architecture.
+Des inconvénients naissent. Contrairement au "vector", le format contiguë segmenté ne permet pas l'accès aisé aux éléments par l'incrémentation. Accéder à des éléments au milieu de la suite est aussi plus complexe. De plus, le système de pointeur consomme plus en mémoire.
 
-![](./docs/select-a-kit.png)
+Pour résumer, la "deque" se spécialise dans l'accès, l'ajout et la suppression de données aux extrémités.
 
-Your program should then compile, run, and output "Hello World!"
+Une "deque" serait donc superbe pour contrôler les retours de matériel d'un bureau des arts actuellement sur Champs-sur-Marne. Lorsque les étudiants retournent le matériel emprunté, ils seront ajoutés à la fin de la file d'attente. Les intelligents gérants supprimeront les retours en début de suite. L'association, plus populaire lors des travaux audiovisuels des IMAC, sera prête à recevoir un grand nombre de retours et à voir sa file d'attente grandir dynamiquement.
 
-![](./docs/hello-world.png)
+### Le container map
 
-🎉 **Congrats, you are now ready to start coding!**
+La "map" est une structure associative. Elle associe et stocke une clé unique et une valeur. Cette clé permet de trier l'élément dans un arbre binaire de recherche. Les règles de tri des clés et de l'arbre sont personnalisables.
 
-## Writing code
+Ce système ouvre donc la porte à la recherche d'éléments optimisée. La comparaison de chaque branche de l'arbre permet d'accéder à l'élément souhaité et de limiter le parcours nécessaire.
 
-Put all your C++ files (*.cpp* and *.hpp*) in the `src` folder.
-This is where the `CMakeLists.txt` is configured to look for them.
+Cependant, les opérations d'insertion et de suppression sont plus coûteuses, car la structure de l'arbre est rééquilibrée à chaque fois pour garantir des temps de recherche optimaux.
+
+La "map" est donc plus cohérente avec certains systèmes. L'accès doit être au centre et les données doivent être triées et valorisées les unes par rapport à d'autres.
+
+Une "map" serait donc efficace pour trier le stock de 803Z. Comme le stock changera rarement, l'arbre de recherche devra rarement être équilibré. Par contre, cette méthode alternative permettra d'accéder plus rapidement à certains articles suivant leur popularité par exemple. Les possibilités de tri et de clés sont infinies et permettraient d'optimiser la récupération de données sur le matériel en stock.
